@@ -21798,19 +21798,16 @@ Warning only warns without preventing arming. Actions other than Warning also pr
 
 ### COM_POS_FS_ACT (`INT32`) {#COM_POS_FS_ACT}
 
-Loss of position autonomous failsafe action.
+Loss of position failsafe action.
 
-If no autonomous horizontal navigation is possible anymore should the vehicle attempt to
-descend blindly and land or terminate which can be preferable if there's a parachute and no pilot.
+Final fallback failsafe action for loss of horizontal position in autonomous modes:
 
-Action to take when autonomous horizontal navigation is lost:
-
-- "Descend if possible" blind with potential drift and uncontrolled landing (risk of hitting obstacles)
-- "Terminate" can be preferred for unpiloted use with emergency parachute
+- Descend (potential for horizontal drift on landing)
+- Flight termination (allows parachute landing)
 
 **Values:**
 
-- `0`: Descend if possible
+- `0`: Descend mode
 - `1`: Terminate
 
 | Reboot | minValue | maxValue | increment | default | unit | Read-Only |
@@ -26689,13 +26686,23 @@ Not available on MTK.
 | ------- | -------- | -------- | --------- | ------------ | ---- | --------- |
 | &check; |          |          |           | Disabled (0) |      | &nbsp;    |
 
+### GPS_UBX_BAUD1 (`INT32`) {#GPS_UBX_BAUD1}
+
+u-blox UART1 target baudrate.
+
+Baudrate applied to the receiver UART1 after the link is auto-detected.
+0 keeps the driver default (115200). Modes that share UART1 with RTCM
+(GPS_UBX_MODE 3/4) may need a higher rate on short/reliable links.
+
+| Reboot  | minValue | maxValue | increment | default | unit | Read-Only |
+| ------- | -------- | -------- | --------- | ------- | ---- | --------- |
+| &check; | 0        | 3000000  |           | 0       | B/s  | &nbsp;    |
+
 ### GPS_UBX_BAUD2 (`INT32`) {#GPS_UBX_BAUD2}
 
-u-blox F9P UART2 Baudrate.
+u-blox UART2 baudrate.
 
-Select a baudrate for the F9P's UART2 port.
-In GPS_UBX_MODE 1, 2, and 3, the F9P's UART2 port is configured to send/receive RTCM corrections.
-Set this to 57600 if you want to attach a telemetry radio on UART2.
+Baudrate for the receiver UART2 port.
 
 | Reboot  | minValue | maxValue | increment | default | unit | Read-Only |
 | ------- | -------- | -------- | --------- | ------- | ---- | --------- |
@@ -26808,8 +26815,8 @@ Mode 6 is intended for use with a ground control station (not necessarily an RTK
 - `0`: Default
 - `1`: Heading (Rover With Moving Base UART1 Connected To Autopilot, UART2 Connected To Moving Base)
 - `2`: Moving Base (UART1 Connected To Autopilot, UART2 Connected To Rover)
-- `3`: Heading (Rover With Moving Base UART1 Connected to Autopilot Or Can Node At 921600)
-- `4`: Moving Base (Moving Base UART1 Connected to Autopilot Or Can Node At 921600)
+- `3`: Heading (Rover With Moving Base UART1 Connected to Autopilot Or Can Node)
+- `4`: Moving Base (Moving Base UART1 Connected to Autopilot Or Can Node)
 - `5`: Rover with Static Base on UART2 (similar to Default, except coming in on UART2)
 - `6`: Ground Control Station (UART2 outputs NMEA)
 
@@ -44346,6 +44353,22 @@ Number of voltage pulses per one rotor revolution on the capturing pin.
 | Reboot  | minValue | maxValue | increment | default | unit | Read-Only |
 | ------- | -------- | -------- | --------- | ------- | ---- | --------- |
 | &check; | 1        | 50       |           | 1       |      | &nbsp;    |
+
+### SYS_AUTOCFG_CAL (`INT32`) {#SYS_AUTOCFG_CAL}
+
+Sensor calibration in SYS_AUTOCONFIG reset.
+
+If enabled, a SYS_AUTOCONFIG reset overwrites stored sensor calibration with the airframe's built-in defaults.
+Enable when the airframe ships its own calibration.
+
+**Values:**
+
+- `0`: Disabled
+- `1`: Enabled
+
+| Reboot | minValue | maxValue | increment | default      | unit | Read-Only |
+| ------ | -------- | -------- | --------- | ------------ | ---- | --------- |
+| &nbsp; |          |          |           | Disabled (0) |      | &nbsp;    |
 
 ### SYS_AUTOCONFIG (`INT32`) {#SYS_AUTOCONFIG}
 
