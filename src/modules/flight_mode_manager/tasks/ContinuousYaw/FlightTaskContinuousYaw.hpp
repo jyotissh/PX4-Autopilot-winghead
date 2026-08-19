@@ -9,5 +9,5 @@ class FlightTaskContinuousYaw: public FlightTask{
         bool update() override;
         bool activate(const trajectory_setpoint_s &last_setpoint) override;
     private:
-        float _origin_z =0.0f;
+        float _origin_z{0.0f};
 };

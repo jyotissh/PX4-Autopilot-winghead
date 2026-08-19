@@ -207,6 +207,7 @@ void FlightModeManager::start_flight_task()
 	}
 
 	// Manual position control
+	//PX4_INFO("FMM: nav_state=%d task_failure=%d MPC_POS_MODE=%d", _vehicle_status_sub.get().nav_state, task_failure,_param_mpc_pos_mode.get());
 	if ((_vehicle_status_sub.get().nav_state == vehicle_status_s::NAVIGATION_STATE_POSCTL) || task_failure) {
 		found_some_task = true;
 		FlightTaskError error = FlightTaskError::NoError;
