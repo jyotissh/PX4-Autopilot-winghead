@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2024 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2017-2026 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,49 +31,56 @@
  *
  ****************************************************************************/
 
-/**
- * @file fuel_tank_status.hpp
- * @author Nuno Marques <n.marques21@hotmail.com>
- * @brief UAVCAN bridge for Fuel Tank Status messages.
- */
+#include "DLVR.hpp"
 
-#pragma once
+#include <px4_platform_common/getopt.h>
+#include <px4_platform_common/module.h>
 
-#include "sensor_bridge.hpp"
-#include <uavcan/equipment/ice/FuelTankStatus.hpp>
-
-#include <uORB/PublicationMulti.hpp>
-#include <uORB/topics/fuel_tank_status.h>
-
-class UavcanFuelTankStatusBridge : public UavcanSensorBridgeBase
+void DLVR::print_usage()
 {
-public:
-	static const char *const NAME;
+	PRINT_MODULE_DESCRIPTION(
+		R"DESCR_STR(
+### Description
 
-	UavcanFuelTankStatusBridge(uavcan::INode &node);
+I2C driver for _Amphenol All Sensors_ Digital Low Voltage R-Series (DLVR) pressure sensors
+(continuous-sampling variants only).
 
-	const char *get_name() const override { return NAME; }
+The driver is enabled for specific sensor-variants using the parameter "SENS_EN_DLVR".
+)DESCR_STR");
+	PRINT_MODULE_USAGE_NAME("dlvr", "driver");
+	PRINT_MODULE_USAGE_SUBCATEGORY("airspeed_sensor");
+	PRINT_MODULE_USAGE_COMMAND("start");
+	PRINT_MODULE_USAGE_PARAMS_I2C_SPI_DRIVER(true, false);
+	PRINT_MODULE_USAGE_PARAMS_I2C_ADDRESS(0x28);
+	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
+}
 
-	int init() override;
+extern "C" int dlvr_main(int argc, char *argv[])
+{
+	using ThisDriver = DLVR;
+	BusCLIArguments cli{true, false};
+	cli.default_i2c_frequency = I2C_SPEED;
+	cli.i2c_address = I2C_ADDRESS_DEFAULT;
 
-private:
+	const char *verb = cli.parseDefaultArguments(argc, argv);
 
-	void fuel_tank_status_sub_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::ice::FuelTankStatus> &msg);
+	if (!verb) {
+		ThisDriver::print_usage();
+		return -1;
+	}
 
-	int init_driver(uavcan_bridge::Channel *channel) override;
+	BusInstanceIterator iterator(MODULE_NAME, cli, DRV_DIFF_PRESS_DEVTYPE_DLVR);
 
-	typedef uavcan::MethodBinder<UavcanFuelTankStatusBridge *,
-		void (UavcanFuelTankStatusBridge::*)
-		(const uavcan::ReceivedDataStructure<uavcan::equipment::ice::FuelTankStatus> &)>
-		FuelTankStatusCbBinder;
+	if (!strcmp(verb, "start")) {
+		return ThisDriver::module_start(cli, iterator);
 
-	uavcan::Subscriber<uavcan::equipment::ice::FuelTankStatus, FuelTankStatusCbBinder> _sub_fuel_tank_status_data;
+	} else if (!strcmp(verb, "stop")) {
+		return ThisDriver::module_stop(iterator);
 
-	static constexpr uint8_t MAX_INSTANCES = fuel_tank_status_s::MAX_INSTANCES;
-	float _max_fuel_capacity[MAX_INSTANCES] {};
-	int32_t _fuel_type{fuel_tank_status_s::MAV_FUEL_TYPE_UNKNOWN};
+	} else if (!strcmp(verb, "status")) {
+		return ThisDriver::module_status(iterator);
+	}
 
-	uORB::PublicationMulti<fuel_tank_status_s> _fuel_tank_status_pub[MAX_INSTANCES] {
-		ORB_ID(fuel_tank_status), ORB_ID(fuel_tank_status), ORB_ID(fuel_tank_status)
-	};
-};
+	ThisDriver::print_usage();
+	return -1;
+}

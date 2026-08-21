@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2026 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2015-2026 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,28 +31,16 @@
 #
 ############################################################################
 
-set(detect_and_avoid_srcs
-	ConflictNotifier.cpp
-	ConflictNotifier.h
-	detect_and_avoid.cpp
-	detect_and_avoid.h
-)
-
-if(CONFIG_NAVIGATOR_ADSB_FAKE_TRAFFIC)
-	list(APPEND detect_and_avoid_srcs detect_and_avoid_fake_traffic.cpp)
-endif()
-
-px4_add_library(detect_and_avoid ${detect_and_avoid_srcs})
-
-set_property(GLOBAL APPEND PROPERTY PX4_MODULE_CONFIG_FILES ${CMAKE_CURRENT_SOURCE_DIR}/detect_and_avoid_params.yaml)
-
-if(CONFIG_NAVIGATOR_ADSB_F3442)
-	set_property(GLOBAL APPEND PROPERTY PX4_MODULE_CONFIG_FILES ${CMAKE_CURRENT_SOURCE_DIR}/detect_and_avoid_f3442_params.yaml)
-endif()
-
-target_link_libraries(detect_and_avoid PUBLIC adsb PRIVATE failure_injection)
-
-# The functional tests use the fake-traffic injector.
-if(CONFIG_NAVIGATOR_ADSB_FAKE_TRAFFIC)
-	add_subdirectory(test)
-endif()
+px4_add_module(
+	MODULE drivers__differential_pressure__dlvr
+	MAIN dlvr
+	COMPILE_FLAGS
+	SRCS
+		dlvr_main.cpp
+		DLVR.cpp
+		DLVR.hpp
+	MODULE_CONFIG
+		module.yaml
+	DEPENDS
+		px4_work_queue
+	)
