@@ -1,6 +1,6 @@
 !/bin/sh
 #
-# @name Generic Tiltrotor VTOL
+# @name SIH Tiltwing VTOL
 #
 # @type VTOL Tiltrotor
 # @class VTOL
@@ -15,7 +15,7 @@ param set-default CA_AIRFRAME 9
 param set-default CA_ROTOR0_TILT 2
 param set-default CA_ROTOR2_TILT 1
 
-#Rotors
+# Rotors
 param set-default CA_ROTOR_COUNT 8
 
 param set-default CA_ROTOR0_PX -1
@@ -55,7 +55,7 @@ param set-default CA_ROTOR7_PZ -1
 param set-default CA_ROTOR7_KM -0.05
 
 #control-allocation
-param set-default CA_SV_CS_COUNT 4
+param set-default CA_SV_CS_COUNT 8
 
 param set-default CA_SV_CS0_TYPE 6
 param set-default CA_SV_CS0_TRQ_P 0.5
@@ -81,11 +81,14 @@ param set-default CA_SV_CS7_TRQ_P 0.5
 
 param set-default CA_SV_TL_COUNT 2
 
+# set SYS_HITL to 2 to start the SIH and avoid sensors startup
+param set-default SYS_HITL 2
+
 #transitions
 
 # param set-default VT_TILT_MC    0
 # param set-default VT_TILT_FW    1
 # param set-default VT_TILT_TRANS 0.5
 
-param set-default MAV_TYPE 21
+param set-default MAV_TYPE 22
 param set-default VT_TYPE 1
