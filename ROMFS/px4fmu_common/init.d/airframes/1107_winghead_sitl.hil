@@ -1,0 +1,67 @@
+#!/bin/sh
+#
+# @name Generic Tiltrotor VTOL
+#
+# @type VTOL Tiltrotor
+# @class VTOL
+#
+# @board px4_fmu-v2 exclude
+# @board bitcraze_crazyflie exclude
+#
+
+. ${R}etc/init.d/rc.vtol_defaults
+
+# Airframe type
+param set-default CA_AIRFRAME 9
+
+# Tilt-Rotor configuration
+param set-default CA_ROTOR0_TILT 2
+param set-default CA_ROTOR2_TILT 1
+
+# Rotor configuration
+param set-default CA_ROTOR_COUNT 8
+
+param set-default CA_ROTOR0_PX 1
+param set-default CA_ROTOR0_PY 1
+
+param set-default CA_ROTOR1_PX 1
+param set-default CA_ROTOR1_PY 1
+
+param set-default CA_ROTOR2_PX 1
+param set-default CA_ROTOR2_PY 1
+
+param set-default CA_ROTOR3_PX 1
+param set-default CA_ROTOR3_PY 1
+
+param set-default CA_ROTOR4_PX 1
+param set-default CA_ROTOR4_PY 1
+
+param set-default CA_ROTOR5_PX 1
+param set-default CA_ROTOR5_PY 1
+
+param set-default CA_ROTOR6_PX 1
+param set-default CA_ROTOR6_PY 1
+
+param set-default CA_ROTOR7_PX 1
+param set-default CA_ROTOR7_PY 1
+
+param set-default CA_ROTOR3_KM -0.05
+
+# Control Surface configuration
+param set-default CA_SV_CS_COUNT 8
+
+param set-default CA_SV_CS0_TYPE 1
+param set-default CA_SV_CS1_TYPE 1
+param set-default CA_SV_CS2_TYPE 1
+param set-default CA_SV_CS3_TYPE 1
+param set-default CA_SV_CS4_TYPE 1
+param set-default CA_SV_CS5_TYPE 1
+param set-default CA_SV_CS6_TYPE 1
+param set-default CA_SV_CS7_TYPE 1
+
+param set-default VT_TILT_MC    0
+param set-default VT_TILT_FW    1
+
+param set-default MAV_TYPE 22   # MAVLink airframe type Values; 22: VTOL reserved 2
+param set-default VT_TYPE 1     # VTOL Type
+
