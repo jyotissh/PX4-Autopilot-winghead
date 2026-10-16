@@ -40,42 +40,42 @@ param set-default SIM_GZ_EC_FUNC8 108
 param set-default CA_ROTOR0_PX  0.901
 param set-default CA_ROTOR0_PY  1.250
 param set-default CA_ROTOR0_PZ -0.044
-param set-default CA_ROTOR0_KM -0.05
+param set-default CA_ROTOR0_KM -0.06
 # act1: fore right inner, CCW
 param set-default CA_ROTOR1_PX  0.901
 param set-default CA_ROTOR1_PY  0.610
 param set-default CA_ROTOR1_PZ -0.044
-param set-default CA_ROTOR0_KM  0.05
+param set-default CA_ROTOR0_KM  0.06
 # act2: fore left inner, CCW
 param set-default CA_ROTOR2_PX  0.915
 param set-default CA_ROTOR2_PY -0.610
 param set-default CA_ROTOR2_PZ -0.034
-param set-default CA_ROTOR0_KM  0.05
+param set-default CA_ROTOR0_KM  0.06
 # act3: fore left outer, CW
 param set-default CA_ROTOR3_PX  0.915
 param set-default CA_ROTOR3_PY -1.250
 param set-default CA_ROTOR3_PZ -0.034
-param set-default CA_ROTOR0_KM -0.05
+param set-default CA_ROTOR0_KM -0.06
 # act4: aft right outer, CCW
 param set-default CA_ROTOR4_PX -0.909
 param set-default CA_ROTOR4_PY  1.525
 param set-default CA_ROTOR4_PZ -0.333
-param set-default CA_ROTOR0_KM  0.05
+param set-default CA_ROTOR0_KM  0.06
 # act5: aft right inner, CW
 param set-default CA_ROTOR5_PX -0.909
 param set-default CA_ROTOR5_PY  0.885
 param set-default CA_ROTOR5_PZ -0.333
-param set-default CA_ROTOR0_KM -0.05
+param set-default CA_ROTOR0_KM -0.06
 # act6: aft left inner, CW
 param set-default CA_ROTOR6_PX -0.907
 param set-default CA_ROTOR6_PY -0.885
 param set-default CA_ROTOR6_PZ -0.329
-param set-default CA_ROTOR0_KM -0.05
+param set-default CA_ROTOR0_KM -0.06
 # act7: aft left outer, CCW
 param set-default CA_ROTOR7_PX -0.907
 param set-default CA_ROTOR7_PY -1.525
 param set-default CA_ROTOR7_PZ -0.329
-param set-default CA_ROTOR0_KM  0.05
+param set-default CA_ROTOR0_KM  0.06
 
 param set-default CA_ROTOR0_TILT 1
 param set-default CA_ROTOR1_TILT 1
