@@ -62,12 +62,18 @@ Please continue reading for [upgrade instructions](#upgrade-guide).
   [SENS_GNSS_PRIME](../advanced_config/parameter_reference.md#SENS_GNSS_PRIME) now defaults to `-1` (Auto) instead of `0`, and saved values are not changed: with Auto the moving base of a moving base pair is the primary receiver, and without one, a receiver that passes the strict checks ([GNSS_REQ_EPH](../advanced_config/parameter_reference.md#GNSS_REQ_EPH) and the other `GNSS_REQ_*` parameters) is used, then one with an RTK fixed solution.
   To keep preferring the receiver on the main serial port, set `SENS_GNSS_PRIME` to `0`.
   In flight the primary receiver is now also left when it has failed the strict checks for 10 s while the other receiver passed them. ([PX4-Autopilot#28798](https://github.com/PX4/PX4-Autopilot/pull/28798))
+- **Re-check the motor failure trigger thresholds.**
+  `MOTFAIL_OFF` and `MOTFAIL_TIME` are replaced by a separate band and trigger time per direction ([MOTFAIL_OVER](../advanced_config/parameter_reference.md#MOTFAIL_OVER)/[MOTFAIL_OVR_TIME](../advanced_config/parameter_reference.md#MOTFAIL_OVR_TIME) and [MOTFAIL_UNDER](../advanced_config/parameter_reference.md#MOTFAIL_UNDER)/[MOTFAIL_UND_TIME](../advanced_config/parameter_reference.md#MOTFAIL_UND_TIME)), and are not migrated: the new parameters start at their defaults. The check now compares a low-pass filtered current residual instead of the instantaneous value, so the thresholds are worth re-deriving: see [Motor Failure Detection > Upgrading from PX4 v1.18](../config/motor_failure_detection.md#upgrading-from-px4-v1-18). ([PX4-Autopilot#27917](https://github.com/PX4/PX4-Autopilot/pull/27917))
 
 ## Other changes
 
 - Fast mission Return modes ([RTL_TYPE](../advanced_config/parameter_reference.md#RTL_TYPE) = 2 and 4) now skip `DO_JUMP` commands (loops) while following the mission path. ([PX4-Autopilot#26993: fix(navigator): goToNextPositionItem skip loops when required](https://github.com/PX4/PX4-Autopilot/pull/26993))
+- A fixed-wing vehicle landing at the end of a reverse mission Return ([RTL_TYPE](../advanced_config/parameter_reference.md#RTL_TYPE) = 2 or 4) uses the home altitude again instead of flaring at flight altitude, a regression in the v1.18 pre-releases.
 - A mission Return mode ([RTL_TYPE](../advanced_config/parameter_reference.md#RTL_TYPE) = 1, 2, 3 or 4) now reads the current mission on the cycle that activates it, so a mission uploaded or changed right as Return starts is used for the return type, the geofence avoidance destination and the starting item. The fast variants also discard the item index they recorded from an earlier mission when a different one is current. ([PX4-Autopilot#28748](https://github.com/PX4/PX4-Autopilot/pull/28748))
 - A `DO_JUMP` whose counter cannot be written to storage, for example on a failing SD card, is now skipped with a message to the operator. Previously the jump was taken again on every pass, repeating the same mission segment until a failsafe stopped the mission. ([PX4-Autopilot#28752](https://github.com/PX4/PX4-Autopilot/pull/28752))
+- Return mode now stops in the cycle it is left, not one cycle later. Before, a precision landing selected right after Return was partly reset, and Return selected again after one cycle of Hold hovered in place instead of returning. ([PX4-Autopilot#29444](https://github.com/PX4/PX4-Autopilot/pull/29444))
+- If a mission-based Return cannot allocate its executor, it now flies directly to its destination, the mission landing point or Home, and tells the pilot "Return: cannot follow the mission; flying directly". Before, Return did nothing. ([PX4-Autopilot#29444](https://github.com/PX4/PX4-Autopilot/pull/29444))
+- Return no longer reports a stale VTOL landing approach in `rtl_status`, for example one found before an [RTL_TYPE](../advanced_config/parameter_reference.md#RTL_TYPE) change. With [MIS_TKO_LAND_REQ](../advanced_config/parameter_reference.md#MIS_TKO_LAND_REQ) = 5, a mission without a landing, uploaded or started in the air, can therefore now be rejected where it passed before. ([PX4-Autopilot#29444](https://github.com/PX4/PX4-Autopilot/pull/29444))
 
 ### Hardware Support
 
@@ -83,6 +89,7 @@ Please continue reading for [upgrade instructions](#upgrade-guide).
 
 - The unit and functional test suite builds, links and runs on macOS (`make tests`), and `px4_poll()` timeouts on macOS wait for their full duration instead of returning at once. The blended GPS timestamp is accumulated in double and rounded once instead of truncating each weighted term. ([PX4-Autopilot#28516](https://github.com/PX4/PX4-Autopilot/pull/28516))
 - The AlphaFilter library takes its sample interval and time constant in microseconds, and the float seconds overloads are removed, so a value in the wrong unit no longer compiles. Out-of-tree code that constructs the filter with seconds needs updating. ([PX4-Autopilot#28421](https://github.com/PX4/PX4-Autopilot/pull/28421))
+- The dataman module now hands out 16-bit client IDs instead of 8-bit ones. Each switch between mission-based return types and each MAVLink instance started in flight used up IDs, and once 254 had been handed out, every new client failed its requests with "Max Dataman clients reached". ([PX4-Autopilot#28944](https://github.com/PX4/PX4-Autopilot/pull/28944))
 
 ### Control
 
@@ -103,12 +110,13 @@ Please continue reading for [upgrade instructions](#upgrade-guide).
   Returns to home if the estimated flight time to home is within the remaining battery time; otherwise returns to the closest rally point.
   Falls back to the closest safe point (home or rally) if battery time remaining is unavailable.
 - [Secure boot](../advanced_config/bootloader_secure_boot.md#multi-part-signed-images) now supports applications that can boot securely from SD card or eMMC. ([PX4-Autopilot#28228](https://github.com/PX4/PX4-Autopilot/pull/28228))
+- [Motor failure detection](../config/motor_failure_detection.md) now compares a low-pass filtered current residual against a separate trip band and trigger time for the undercurrent and overcurrent directions, instead of one symmetric band on the instantaneous current, and the current model gains an offset term. See [Upgrading from PX4 v1.18](../config/motor_failure_detection.md#upgrading-from-px4-v1-18). ([PX4-Autopilot#27711](https://github.com/PX4/PX4-Autopilot/pull/27711), [PX4-Autopilot#27917](https://github.com/PX4/PX4-Autopilot/pull/27917))
+- For MC, arming check can detect [stuck motors](../config/safety.md#motor-not-spinning-after-arming) and disarm before takeoff. ([PX4-Autopilot#29436](https://github.com/PX4/PX4-Autopilot/pull/29436))
 
 ### Estimation
 
 - EKF2 fuses dual-antenna GNSS heading from its own topic, `vehicle_gnss_heading`, at the heading's rate and measurement time instead of with each position sample. GNSS yaw fusion is gated on the heading itself (its baseline checks, and the spoofing and jamming state of the receiver providing it under [GNSS_CHECK](../advanced_config/parameter_reference.md#GNSS_CHECK), which stop it like position fusion), not on the position checks, and it keeps running when position and velocity fusion stop. `GPS_RAW_INT` and `GPS2_RAW` report the body-frame heading of the receiver that provides it. ([PX4-Autopilot#27102](https://github.com/PX4/PX4-Autopilot/pull/27102))
 - When the local position estimate is lost in flight because of GNSS, commander now reports the reason as an event: either the receiver checks that failed, or that the receiver stopped sending data. The ground station and the log show the cause ahead of the "GNSS data fusion stopped" message. ([PX4-Autopilot#28873](https://github.com/PX4/PX4-Autopilot/pull/28873))
-- EKF2 now caps the GNSS height observation noise at [EKF2_NOAID_NOISE](../advanced_config/parameter_reference.md#EKF2_NOAID_NOISE) only when no other height source is fused. With a barometer or another height source, a GNSS height with a poor reported vertical accuracy is no longer fused as more accurate than the receiver reports. ([PX4-Autopilot#29058](https://github.com/PX4/PX4-Autopilot/pull/29058))
 
 ### Sensors
 
@@ -122,7 +130,7 @@ Please continue reading for [upgrade instructions](#upgrade-guide).
 
 ### Debug & Logging
 
-- TBD
+- [Offline motor failure replay](../debug/motor_failure_replay.md): a host tool that runs the real motor failure detector over a recorded `.ulg`, for calibrating and verifying the [motor failure detection](../config/motor_failure_detection.md) thresholds against a vehicle's own flights. ([PX4-Autopilot#27917](https://github.com/PX4/PX4-Autopilot/pull/27917))
 
 ### Ethernet
 

@@ -293,6 +293,11 @@ protected:
 	void update_mission();
 
 	/**
+	 * Whether update_mission() may start flying the mission items now
+	 */
+	virtual bool canStartMission() const { return true; }
+
+	/**
 	 * Move on to next mission item or switch to loiter
 	 */
 	void advance_mission();
@@ -469,7 +474,7 @@ private:
 	 * @brief Maximum number of jump mission items iterations
 	 *
 	 */
-	static constexpr uint16_t MAX_JUMP_ITERATION{10u};
+	static constexpr uint16_t MAX_JUMP_ITERATION{NAV_MAX_JUMP_ITERATION};
 	/**
 	 * @brief Update Dataman cache
 	 *
