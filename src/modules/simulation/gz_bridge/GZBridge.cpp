@@ -85,55 +85,55 @@ int GZBridge::init()
 	}
 
 	// OPTIONAL:
-	if (_sim_gz_en_imu.get()) {
+	if (_param_sim_gz_en_imu.get()) {
 		if (!subscribeImu(false)) {
 			return PX4_ERROR;
 		}
 	}
 
-	if (_sim_gz_en_mag.get()) {
+	if (_param_sim_gz_en_mag.get()) {
 		if (!subscribeMag(false)) {
 			return PX4_ERROR;
 		}
 	}
 
-	if (_sim_gz_en_gps.get()) {
+	if (_param_sim_gz_en_gps.get()) {
 		if (!subscribeNavsat(false)) {
 			return PX4_ERROR;
 		}
 	}
 
-	if (_sim_gz_en_baro.get()) {
+	if (_param_sim_gz_en_baro.get()) {
 		if (!subscribeAirPressure(false)) {
 			return PX4_ERROR;
 		}
 	}
 
-	if (_sim_gz_en_lidar.get()) {
+	if (_param_sim_gz_en_lidar.get()) {
 		if (!subscribeDistanceSensor(false)) {
 			return PX4_ERROR;
 		}
 	}
 
-	if (_sim_gz_en_aspd.get()) {
+	if (_param_sim_gz_en_aspd.get()) {
 		if (!subscribeAirspeed(false)) {
 			return PX4_ERROR;
 		}
 	}
 
-	if (_sim_gz_en_flow.get()) {
+	if (_param_sim_gz_en_flow.get()) {
 		if (!subscribeOpticalFlow(false)) {
 			return PX4_ERROR;
 		}
 	}
 
-	if (_sim_gz_en_odom.get()) {
+	if (_param_sim_gz_en_odom.get()) {
 		if (!subscribeOdometry(false)) {
 			return PX4_ERROR;
 		}
 	}
 
-	if (_sim_gz_en_lidar.get()) {
+	if (_param_sim_gz_en_lidar.get()) {
 		if (!subscribeLaserScan(false)) {
 			return PX4_ERROR;
 		}
@@ -226,7 +226,7 @@ bool GZBridge::subscribePoseInfo(bool required)
 
 bool GZBridge::subscribeImu(bool required)
 {
-	uint8_t count = math::min(_MAX_IMU_SENSORS, static_cast<uint8_t>(_sim_gz_en_imu.get()));
+	uint8_t count = math::min(_MAX_IMU_SENSORS, static_cast<uint8_t>(_param_sim_gz_en_imu.get()));
 
 	for (uint8_t i = 0; i < _MAX_IMU_SENSORS; i++) {
 		std::string imu_topic;
@@ -262,7 +262,7 @@ bool GZBridge::subscribeImu(bool required)
 
 bool GZBridge::subscribeMag(bool required)
 {
-	uint8_t count = math::min(_MAX_MAG_SENSORS, static_cast<uint8_t>(_sim_gz_en_mag.get()));
+	uint8_t count = math::min(_MAX_MAG_SENSORS, static_cast<uint8_t>(_param_sim_gz_en_mag.get()));
 
 	for (uint8_t i = 0; i < _MAX_MAG_SENSORS; i++) {
 		std::string mag_topic;
@@ -389,7 +389,7 @@ bool GZBridge::subscribeAirspeed(bool required)
 
 bool GZBridge::subscribeAirPressure(bool required)
 {
-	uint8_t count = math::min(_MAX_BARO_SENSORS, static_cast<uint8_t>(_sim_gz_en_baro.get()));
+	uint8_t count = math::min(_MAX_BARO_SENSORS, static_cast<uint8_t>(_param_sim_gz_en_baro.get()));
 
 	for (uint8_t i = 0; i < _MAX_BARO_SENSORS; i++) {
 		std::string baro_topic;
@@ -425,7 +425,7 @@ bool GZBridge::subscribeAirPressure(bool required)
 
 bool GZBridge::subscribeNavsat(bool required)
 {
-	uint8_t count = math::min(_MAX_GNSS_SENSORS, static_cast<uint8_t>(_sim_gz_en_gps.get()));
+	uint8_t count = math::min(_MAX_GNSS_SENSORS, static_cast<uint8_t>(_param_sim_gz_en_gps.get()));
 
 	for (uint8_t i = 0; i < _MAX_GNSS_SENSORS; i++) {
 		std::string gnss_topic;
@@ -526,7 +526,7 @@ void GZBridge::opticalFlowCallback(const px4::msgs::OpticalFlow &msg)
 void GZBridge::magnetometerCallback(const gz::msgs::Magnetometer &msg, uint8_t instance_index)
 {
 	// Bounds check and safety guard
-	uint8_t count = math::min(_MAX_MAG_SENSORS, static_cast<uint8_t>(_sim_gz_en_mag.get()));
+	uint8_t count = math::min(_MAX_MAG_SENSORS, static_cast<uint8_t>(_param_sim_gz_en_mag.get()));
 
 	if (instance_index >= count) {
 		return;
@@ -568,7 +568,7 @@ void GZBridge::magnetometerCallback(const gz::msgs::Magnetometer &msg, uint8_t i
 void GZBridge::airPressureCallback(const gz::msgs::FluidPressure &msg, uint8_t instance_index)
 {
 	// Bounds check and safety guard
-	uint8_t count = math::min(_MAX_BARO_SENSORS, static_cast<uint8_t>(_sim_gz_en_baro.get()));
+	uint8_t count = math::min(_MAX_BARO_SENSORS, static_cast<uint8_t>(_param_sim_gz_en_baro.get()));
 
 	if (instance_index >= count) {
 		return;
@@ -581,6 +581,7 @@ void GZBridge::airPressureCallback(const gz::msgs::FluidPressure &msg, uint8_t i
 void GZBridge::airspeedCallback(const gz::msgs::AirSpeed &msg)
 {
 	const uint64_t timestamp = hrt_absolute_time();
+	_failure_config.update();
 
 	device::Device::DeviceId id{};
 	id.devid_s.bus_type = device::Device::DeviceBusType::DeviceBusType_SIMULATION;
@@ -596,13 +597,16 @@ void GZBridge::airspeedCallback(const gz::msgs::AirSpeed &msg)
 	_temperature = static_cast<float>(msg.temperature()) + atmosphere::kAbsoluteNullCelsius; // K to C
 	report.temperature = _temperature;
 	report.pitot_temperature = NAN;
-	_differential_pressure_pub.publish(report);
+
+	if (failure_injection::process_airspeed(_failure_config, 0, report, _airspeed_failure)) {
+		_differential_pressure_pub.publish(report);
+	}
 }
 
 void GZBridge::imuCallback(const gz::msgs::IMU &msg, uint8_t instance_index)
 {
 	// Bounds check and safety guard
-	uint8_t count = math::min(_MAX_IMU_SENSORS, static_cast<uint8_t>(_sim_gz_en_imu.get()));
+	uint8_t count = math::min(_MAX_IMU_SENSORS, static_cast<uint8_t>(_param_sim_gz_en_imu.get()));
 
 	if (instance_index >= count) {
 		return;
@@ -634,12 +638,17 @@ void GZBridge::imuCallback(const gz::msgs::IMU &msg, uint8_t instance_index)
 void GZBridge::poseInfoCallback(const gz::msgs::Pose_V &msg)
 {
 	const uint64_t timestamp = hrt_absolute_time();
+	const uint64_t timestamp_sample = msg.header().stamp().sec() * 1000000ULL + msg.header().stamp().nsec() / 1000;
+
+	if (timestamp_sample <= _timestamp_prev) {
+		return;
+	}
 
 	for (int p = 0; p < msg.pose_size(); p++) {
 		if (msg.pose(p).name() == _model_name) {
 
-			const double dt = math::constrain((timestamp - _timestamp_prev) * 1e-6, 0.001, 0.1);
-			_timestamp_prev = timestamp;
+			const double dt = (timestamp_sample - _timestamp_prev) * 1e-6;
+			_timestamp_prev = timestamp_sample;
 
 			gz::msgs::Vector3d pose_position = msg.pose(p).position();
 			gz::msgs::Quaternion pose_orientation = msg.pose(p).orientation();
@@ -656,7 +665,7 @@ void GZBridge::poseInfoCallback(const gz::msgs::Pose_V &msg)
 
 			// publish attitude groundtruth
 			vehicle_attitude_s vehicle_attitude_groundtruth{};
-			vehicle_attitude_groundtruth.timestamp_sample = timestamp;
+			vehicle_attitude_groundtruth.timestamp_sample = timestamp_sample;
 			vehicle_attitude_groundtruth.q[0] = q_nb.W();
 			vehicle_attitude_groundtruth.q[1] = q_nb.X();
 			vehicle_attitude_groundtruth.q[2] = q_nb.Y();
@@ -667,7 +676,7 @@ void GZBridge::poseInfoCallback(const gz::msgs::Pose_V &msg)
 			// publish angular velocity groundtruth
 			const matrix::Eulerf euler{matrix::Quatf(vehicle_attitude_groundtruth.q)};
 			vehicle_angular_velocity_s vehicle_angular_velocity_groundtruth{};
-			vehicle_angular_velocity_groundtruth.timestamp_sample = timestamp;
+			vehicle_angular_velocity_groundtruth.timestamp_sample = timestamp_sample;
 			const matrix::Vector3f angular_velocity = (euler - _euler_prev) / dt;
 			_euler_prev = euler;
 			angular_velocity.copyTo(vehicle_angular_velocity_groundtruth.xyz);
@@ -676,7 +685,7 @@ void GZBridge::poseInfoCallback(const gz::msgs::Pose_V &msg)
 			_angular_velocity_ground_truth_pub.publish(vehicle_angular_velocity_groundtruth);
 
 			vehicle_local_position_s local_position_groundtruth{};
-			local_position_groundtruth.timestamp_sample = timestamp;
+			local_position_groundtruth.timestamp_sample = timestamp_sample;
 			// position ENU -> NED
 			const matrix::Vector3d position{pose_position.y(), pose_position.x(), -pose_position.z()};
 			const matrix::Vector3d velocity{(position - _position_prev) / dt};
@@ -822,7 +831,7 @@ void GZBridge::addGpsNoise(double &latitude, double &longitude, double &altitude
 
 void GZBridge::navSatCallback(const gz::msgs::NavSat &msg, uint8_t instance_index)
 {
-	uint8_t count = math::min(_MAX_GNSS_SENSORS, static_cast<uint8_t>(_sim_gz_en_gps.get()));
+	uint8_t count = math::min(_MAX_GNSS_SENSORS, static_cast<uint8_t>(_param_sim_gz_en_gps.get()));
 
 	if (instance_index >= count) {
 		return;
@@ -867,7 +876,7 @@ void GZBridge::navSatCallback(const gz::msgs::NavSat &msg, uint8_t instance_inde
 
 	sensor_gnss_s sensor_gnss{};
 
-	if (_sim_gps_used.get() >= 4) {
+	if (_param_sim_gps_used.get() >= 4) {
 		// fix
 		sensor_gnss.fix_type = 3; // 3D fix
 		sensor_gnss.speed_accuracy = 0.4f;
@@ -908,7 +917,7 @@ void GZBridge::navSatCallback(const gz::msgs::NavSat &msg, uint8_t instance_inde
 	sensor_gnss.jamming_state = 0;
 	sensor_gnss.spoofing_state = 0;
 	sensor_gnss.vel_ned_valid = true;
-	sensor_gnss.satellites_used = _sim_gps_used.get();
+	sensor_gnss.satellites_used = _param_sim_gps_used.get();
 
 	if (failure_injection::process_gnss(_failure_config, instance_index, sensor_gnss, _gnss_stuck[instance_index])) {
 		_sensor_gnss_pub[instance_index].publish(sensor_gnss);

@@ -132,6 +132,17 @@ FailsafeBase::ActionOptions Failsafe::fromGfActParam(int param_value)
 	return options;
 }
 
+// The contingency geofence is there to keep the vehicle from breaching the emergency geofence, where Terminate may
+// be set. Terminate is reserved for the emergency geofence, to prevent a misconfiguration.
+FailsafeBase::ActionOptions Failsafe::fromGfContActParam(int param_value)
+{
+	if (geofence_violation_action(param_value) == geofence_violation_action::Terminate) {
+		return ActionOptions(Action::Warn);
+	}
+
+	return fromGfActParam(param_value);
+}
+
 
 FailsafeBase::ActionOptions Failsafe::fromActuatorFailureActParam(int param_value)
 {
@@ -431,11 +442,13 @@ FailsafeBase::ActionOptions Failsafe::fromGnssLossActParam(int param_value)
 	case gps_redundancy_failsafe_mode::Return_mode:
 		options.action = Action::RTL;
 		options.clear_condition = ClearCondition::OnModeChangeOrDisarm;
+		options.clear_during_delay = true; // a short loss only causes a Hold
 		break;
 
 	case gps_redundancy_failsafe_mode::Land_mode:
 		options.action = Action::Land;
 		options.clear_condition = ClearCondition::OnModeChangeOrDisarm;
+		options.clear_during_delay = true; // a short loss only causes a Hold
 		break;
 
 	case gps_redundancy_failsafe_mode::Terminate:
@@ -625,16 +638,6 @@ void Failsafe::checkStateAndMode(const hrt_abstime &time_us, const State &state,
 	// Mission
 	if (state.user_intended_mode == vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION) {
 		CHECK_FAILSAFE(status_flags, mission_failure, Action::RTL);
-
-		// If manual control loss and GCS connection loss are disabled and we lose both command links and the mission finished,
-		// trigger Return to avoid losing the vehicle
-		if ((_param_com_rc_in_mode.get() == int32_t(RcInMode::DisableManualControl)
-		     || isFailsafeIgnored(state.user_intended_mode, _param_com_rcl_except.get()))
-		    && _param_nav_dll_act.get() == int32_t(gcs_connection_loss_failsafe_mode::Disabled)
-		    && state.mission_finished) {
-			_last_state_mission_control_lost = checkFailsafe(_caller_id_mission_control_lost, _last_state_mission_control_lost,
-							   status_flags.gcs_connection_lost, Action::RTL);
-		}
 	}
 
 	CHECK_FAILSAFE(status_flags, wind_limit_exceeded,
@@ -657,7 +660,9 @@ void Failsafe::checkStateAndMode(const hrt_abstime &time_us, const State &state,
 			       ActionOptions(Action::Hold).clearOn(ClearCondition::OnModeChangeOrDisarm));
 	}
 
-	CHECK_FAILSAFE(status_flags, geofence_breached, fromGfActParam(_param_gf_action.get()).cannotBeDeferred());
+	CHECK_FAILSAFE(status_flags, gf_emer_breach, fromGfActParam(_param_gf_action.get()).cannotBeDeferred());
+	CHECK_FAILSAFE(status_flags, gf_cont_breach,
+		       fromGfContActParam(_param_gf_cont_action.get()).cannotBeDeferred());
 
 	const hrt_abstime spoolup = static_cast<hrt_abstime>(_param_com_spoolup_time.get() * 1_s);
 
@@ -739,13 +744,17 @@ void Failsafe::checkStateAndMode(const hrt_abstime &time_us, const State &state,
 	}
 
 	CHECK_FAILSAFE(status_flags, fd_imbalanced_prop, Action::Warn);
-	CHECK_FAILSAFE(status_flags, fd_motor_failure, fromActuatorFailureActParam(_param_com_actuator_failure_act.get()));
+	CHECK_FAILSAFE(status_flags, fd_motor_failure, fromActuatorFailureActParam(_param_com_act_fail_act.get()));
 	CHECK_FAILSAFE(status_flags, gnss_lost, fromGnssLossActParam(_param_com_gnssloss_act.get()));
 
 
 
 	// Mode fallback (last)
-	Action mode_fallback_action = checkModeFallback(status_flags, state.user_intended_mode);
+	// A fixed-wing takeoff does not need a position estimate (the mode manager then climbs with wings level),
+	// so the takeoff item of a mission is held to the same requirements as Takeoff mode.
+	const uint8_t mode_fallback_check_mode = state.fw_mission_takeoff ? vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF :
+			state.user_intended_mode;
+	Action mode_fallback_action = checkModeFallback(status_flags, mode_fallback_check_mode);
 	_last_state_mode_fallback = checkFailsafe(_caller_id_mode_fallback, _last_state_mode_fallback,
 				    mode_fallback_action != Action::None,
 				    ActionOptions(mode_fallback_action).allowUserTakeover(UserTakeoverAllowed::Always).cannotBeDeferred());
