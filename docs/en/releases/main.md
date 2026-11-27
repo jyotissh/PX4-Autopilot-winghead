@@ -132,6 +132,7 @@ Please continue reading for [upgrade instructions](#upgrade-guide).
   ([PX4-Autopilot#28782: feat(tools): add mavlink_serial_bridge.py reference bridge application](https://github.com/PX4/PX4-Autopilot/pull/28782))
 - [Agam FloRange](../dronecan/agam_florange.md): new DroneCAN optical flow, distance sensor and IMU module (PAA3905, AFBR-S50LV85D, ICM-42688-P). ([PX4-Autopilot#28901](https://github.com/PX4/PX4-Autopilot/pull/28901))
 - [Agam Autopilot v6X-RT](../flight_controller/agam_v6xrt.md): new FMUv6X-RT flight controller (NXP i.MX RT1176) with triple-redundant IMUs and 100BASE-T1 Ethernet. ([PX4-Autopilot#28285](https://github.com/PX4/PX4-Autopilot/pull/28285))
+- [Syro V6X](../flight_controller/syro_v6x.md): new FMUv6X-based flight controller (STM32H753) with two ICM-45686 IMUs, a BMI088 IMU, two BMP581 barometers and a BMM350 magnetometer. ([PX4-Autopilot#29784](https://github.com/PX4/PX4-Autopilot/pull/29784))
 - [NXP MR-NavQ95](../flight_controller/nxp_mr_navq95.md): new i.MX 95 flight controller with PX4 on the Cortex-M7 core and Linux on the Cortex-A55 cores. ([PX4-Autopilot#29055](https://github.com/PX4/PX4-Autopilot/pull/29055))
 - [Avian Automata 305AP](../flight_controller/avianautomata_305ap.md): new STM32H743 flight controller with two IMU slots, two CAN buses and eight DShot outputs. ([PX4-Autopilot#29689](https://github.com/PX4/PX4-Autopilot/pull/29689))
 
@@ -200,8 +201,9 @@ Please continue reading for [upgrade instructions](#upgrade-guide).
 
 ### MAVLink
 
-- ESC/motor health is now reported in [SYS_STATUS](https://mavlink.io/en/messages/common.html#SYS_STATUS) using the [MAV_SYS_STATUS_SENSOR_PROPULSION](https://mavlink.io/en/messages/common.html#MAV_SYS_STATUS_SENSOR_PROPULSION) bit instead of [MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS](https://mavlink.io/en/messages/common.html#MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS).
-  ([PX4-Autopilot#29192](https://github.com/PX4/PX4-Autopilot/pull/29192)).
+- [SYS_STATUS](https://mavlink.io/en/messages/common.html#SYS_STATUS) now reports ESC/motor health using the [MAV_SYS_STATUS_SENSOR_PROPULSION](https://mavlink.io/en/messages/common.html#MAV_SYS_STATUS_SENSOR_PROPULSION) bit, and the safety interlock using [MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS](https://mavlink.io/en/messages/common.html#MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS).
+  `MOTOR_OUTPUTS` previously reported ESC/motor health: it is now enabled when safety is off (always, with the default [COM_SAFETY_MODE](../advanced_config/parameter_reference.md#COM_SAFETY_MODE) = `Always off`), and its health bit is always set.
+  ([PX4-Autopilot#29192](https://github.com/PX4/PX4-Autopilot/pull/29192), [PX4-Autopilot#29721](https://github.com/PX4/PX4-Autopilot/pull/29721))
 - [SYS_STATUS](https://mavlink.io/en/messages/common.html#SYS_STATUS) now sets the [MAV_SYS_STATUS_EXTENSION_USED](https://mavlink.io/en/messages/common.html#MAV_SYS_STATUS_EXTENSION_USED) flag in `onboard_control_sensors_present` when extended sensor fields are used.
 - [TIME_ESTIMATE_TO_TARGET](https://mavlink.io/en/messages/common.html#TIME_ESTIMATE_TO_TARGET) reports `safe_return` as `-1` (landed or no estimate) when Return has no time estimate: before Home is set, on the ground unless Return would follow a mission landing, and with [RTL_TYPE](../advanced_config/parameter_reference.md#RTL_TYPE) = 2 or 4 and a valid mission.
   It used to send `0`, or an undefined value with `RTL_TYPE` 2 and 4.
